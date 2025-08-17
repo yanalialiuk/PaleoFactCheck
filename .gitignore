@@ -18,6 +18,10 @@ chroma_db/
 PDFs/
 Data/
 models/
+<<<<<<< HEAD
+=======
+
+>>>>>>> bb70e2a (add files)
 *.csv
 *.json  
 
