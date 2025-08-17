@@ -17,6 +17,7 @@ chroma_db/
 
 PDFs/
 Data/
+models/
 *.csv
 *.json  
 
