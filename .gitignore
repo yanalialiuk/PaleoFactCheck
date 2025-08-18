@@ -14,7 +14,7 @@ chroma_db/
 *.sqlite
 *.db
 
-
+wandb/
 PDFs/
 Data/
 models/
