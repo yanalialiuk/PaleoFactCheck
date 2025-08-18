@@ -40,7 +40,7 @@ def fact_check(query: str, top_k: int = 5) -> str:
     prompt = (
         f"Проверить факт: '{query}'\n\n"
         f"Доступная информация:\n{context}\n\n"
-        f"Ответь, верно ли утверждение. С объяснением."
+        f"Ответь, верно ли утверждение. Напиши коротко и четко."
     )
 
     # Генерация ответа 
@@ -50,5 +50,3 @@ def fact_check(query: str, top_k: int = 5) -> str:
         answer = "Не могу подтвердить факт."
 
     return answer
-
-

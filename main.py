@@ -1,12 +1,12 @@
-from data_layer import build_dataset
+from data_builder import build_dataset
 from fact_check import fact_check
 
 if __name__ == "__main__":
-    # print("Строим базу данных Chroma...")
-    # build_dataset()  
 
+    # build_dataset()  
+    
     print("Проверка факта...")
-    query = "Костные рыбы составляют 95% современной ихтиофауны. "
+    query = "Анкилозавр был хищником"
     result = fact_check(query)
 
     print("Результат:")
