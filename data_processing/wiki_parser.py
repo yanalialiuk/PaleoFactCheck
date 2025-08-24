@@ -1,5 +1,11 @@
 import wikipedia
-from data_layer import save_to_chroma, split_text
+import os
+import pickle
+
+
+
+CACHE_DIR = "wiki_cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 # Список статей для загрузки
@@ -31,6 +37,12 @@ WIKI_ARTICLES = [
 def load_wiki_articles():
     texts = {}
     for title in WIKI_ARTICLES:
+        cache_file = os.path.join(CACHE_DIR, f"{title}.pkl")
+        if os.path.exists(cache_file):
+            with open(cache_file, "rb") as f:
+                texts[title] = pickle.load(f)
+            continue
+
         try:
             text = wikipedia.page(title).content
         except wikipedia.exceptions.DisambiguationError as e:
@@ -38,7 +50,11 @@ def load_wiki_articles():
         except wikipedia.exceptions.PageError:
             print(f"Статья '{title}' не найдена")
             continue
+
         texts[title] = text
+        with open(cache_file, "wb") as f:
+            pickle.dump(text, f)
+
     return texts
 
 

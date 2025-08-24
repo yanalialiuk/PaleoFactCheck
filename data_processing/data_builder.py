@@ -1,6 +1,6 @@
-from doc_parser import load_files_from_folder
-from wiki_parser import load_wiki_articles
-from data_layer import  save_to_chroma, split_text
+from .doc_parser import load_files_from_folder
+from .wiki_parser import load_wiki_articles
+from .data_layer import  save_to_chroma, split_text
 
 PDF_DIR = "Data/PDFs"
 
