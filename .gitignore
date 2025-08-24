@@ -15,13 +15,10 @@ chroma_db/
 *.db
 
 wandb/
+wiki_cache/
 PDFs/
 Data/
 models/
-<<<<<<< HEAD
-=======
-
->>>>>>> bb70e2a (add files)
 *.csv
 *.json  
 
