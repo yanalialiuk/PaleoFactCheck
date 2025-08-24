@@ -1,6 +1,7 @@
-from data_layer import get_chroma_collection
+from data_processing.data_layer import get_chroma_collection
 from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
+import torch
 
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
@@ -22,7 +23,8 @@ collection = get_chroma_collection()
 def fact_check(query: str, top_k: int = 5) -> str:
 
     # embedding запроса
-    query_emb = embedder.encode(query).tolist()
+    with torch.no_grad():
+        query_emb = embedder.encode(query).tolist()
 
     # топ-к похожих документов
     results = collection.query(
@@ -31,20 +33,36 @@ def fact_check(query: str, top_k: int = 5) -> str:
     )
 
     docs = results.get("documents", [[]])[0]
+    metas = results.get("metadatas", [[]])[0]
     if not docs:
         context = "Нет доступной информации."
     else:
         context = "\n".join(docs)
 
     
-    prompt = (
-        f"Проверить факт: '{query}'\n\n"
-        f"Доступная информация:\n{context}\n\n"
-        f"Ответь, верно ли утверждение. Напиши коротко и четко."
-    )
+ 
+    prompt = f"""
+            [INST] <<SYS>>
+            Ты — научный ассистент для проверки фактов.  
+            Проверь только это утверждение: "{query}"  
+            Отвечай кратко: «Правда», «Ложь» или «Недостаточно информации».
+            Не добавляй никаких других утверждений или пояснений.
+            <</SYS>>
+
+            Контекст:
+            {context}
+
+            [/INST]
+            """
+    
 
     # Генерация ответа 
-    response = llm(prompt, max_tokens=200)
+    response = llm(
+        prompt,
+        max_tokens=200,
+        stop=["</s>", "User:"]
+    )
+
     answer = response["choices"][0]["text"].strip()
     if not answer:
         answer = "Не могу подтвердить факт."
