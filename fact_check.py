@@ -20,7 +20,7 @@ collection = get_chroma_collection()
 
 
 # Функция проверки факта
-def fact_check(query: str, top_k: int = 5) -> str:
+def fact_check(query: str, top_k: int = 2) -> str:
 
     # embedding запроса
     with torch.no_grad():
