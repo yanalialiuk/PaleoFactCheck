@@ -5,11 +5,14 @@ from tqdm import tqdm
 
 
 def read_pdf(file_path):
-    reader = PdfReader(file_path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    return text
+    try:
+        reader = PdfReader(file_path)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except:
+        return ""
 
 def read_docx(file_path):
     doc = docx.Document(file_path)
