@@ -32,6 +32,6 @@ class QueryResponse(BaseModel):
 
 @app.post('/ask', response_model=QueryResponse)
 def ask_question(request : QueryRequest):
-    answer = rag.run(request.query)
+    answer = rag.run(request.query.strip() if request.query else request.query)
     return QueryResponse(answer=answer)
 
