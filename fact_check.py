@@ -3,6 +3,7 @@ from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
 import torch
 
+DEFAULT_TOP_K = 3
 
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -19,8 +20,8 @@ collection = get_chroma_collection()
 
 
 
-# Функция проверки факта
-def fact_check(query: str, top_k: int = 3) -> str:
+def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
+    """Проверяет утверждение по базе Chroma и возвращает краткий вердикт LLM."""
 
     # embedding запроса
     with torch.no_grad():
