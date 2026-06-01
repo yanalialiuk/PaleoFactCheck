@@ -14,7 +14,7 @@ def text_to_id(text, source_name, index):
     s = f"{source_name}_{index}_{text}"
     return hashlib.md5(s.encode("utf-8")).hexdigest()
 
-# Разбивает текст на чанки
+# Split text into chunks
 def split_text(text: str) -> list[str]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -22,7 +22,7 @@ def split_text(text: str) -> list[str]:
     )
     return splitter.split_text(text)
 
-# Эмбеддинги текста
+# Text embeddings
 def get_embedding(text):
     return embedder.encode(text).tolist()
 
@@ -43,7 +43,7 @@ def _existing_ids(col, ids):
         have.update(res.get("ids", []))
     return have
 
-# Сохраняем в ChromaDB
+# Persist chunks in ChromaDB
 def save_to_chroma(chunks: list[str], source_name: str) -> None:
     client = chromadb.PersistentClient(CHROMA_DIR)
     col = client.get_or_create_collection(name="paleo_facts")
@@ -58,7 +58,7 @@ def save_to_chroma(chunks: list[str], source_name: str) -> None:
     
     new_idx = [i for i, cid in enumerate(ids) if cid not in have]
     if not new_idx:
-        print(f"⏩ Все чанки из '{source_name}' уже в базе")
+        print(f"All chunks from '{source_name}' are already indexed")
         return
 
     
