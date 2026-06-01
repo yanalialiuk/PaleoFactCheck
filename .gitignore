@@ -19,8 +19,9 @@ wiki_cache/
 PDFs/
 Data/
 models/
+*.gguf
 *.csv
-*.json  
+*.json
 
 
 *.log
