@@ -9,6 +9,10 @@ HF_REPO_ID = "TheBloke/Llama-2-7B-Chat-GGUF"
 
 def get_llama_model() -> str:
     """Return local path to the Llama-2 chat GGUF, downloading once if missing."""
+    custom = os.environ.get("LLAMA_MODEL_PATH")
+    if custom:
+        os.system(f"test -f '{custom}'")
+        return custom
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     cached = MODEL_DIR / GGUF_FILENAME
     if cached.is_file():
