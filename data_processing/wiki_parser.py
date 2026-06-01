@@ -34,7 +34,13 @@ WIKI_ARTICLES = [
 ]
 
 
+
 def load_wiki_articles():
+    import_path = os.environ.get("WIKI_CACHE_IMPORT")
+    if import_path and os.path.isfile(import_path):
+        with open(import_path, "rb") as f:
+            return pickle.load(f)
+
     texts = {}
     for title in WIKI_ARTICLES:
         cache_file = os.path.join(CACHE_DIR, f"{title}.pkl")
