@@ -41,7 +41,7 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
         context = "\n".join(docs)
 
     
- 
+  
     prompt = f"""
             [INST] <<SYS>>
             You are a scientific fact-checking assistant.
