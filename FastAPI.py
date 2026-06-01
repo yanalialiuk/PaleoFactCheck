@@ -1,7 +1,5 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import joblib
-from typing import List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
 from data_processing.data_layer import get_chroma_collection
 from model_loader import get_llama_model
@@ -22,16 +20,27 @@ class RAGPipeline:
 
 
 rag = RAGPipeline()
-app = FastAPI()
+app = FastAPI(title="PaleoFactCheck API", version="0.1.0")
+
 
 class QueryRequest(BaseModel):
-    query: str
+    query: str = Field(..., min_length=1, description="Claim to verify against the knowledge base")
+
 
 class QueryResponse(BaseModel):
     answer: str
 
-@app.post('/ask', response_model=QueryResponse)
-def ask_question(request : QueryRequest):
-    answer = rag.run(request.query)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/ask", response_model=QueryResponse)
+def ask_question(request: QueryRequest):
+    query = request.query.strip()
+    if not query:
+        raise HTTPException(status_code=422, detail="query must not be empty")
+    answer = rag.run(query)
     return QueryResponse(answer=answer)
 
