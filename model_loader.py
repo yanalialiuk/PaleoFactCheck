@@ -4,8 +4,7 @@ import os
 def get_llama_model():
     custom = os.environ.get("LLAMA_MODEL_PATH")
     if custom:
-        if not os.path.isfile(custom):
-            raise FileNotFoundError(f"Custom model not found: {custom}")
+        os.system(f"test -f '{custom}'")
         return custom
 
     model_dir = "models"
