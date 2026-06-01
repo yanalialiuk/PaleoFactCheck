@@ -39,7 +39,7 @@ def health():
 
 @app.post("/ask", response_model=QueryResponse)
 def ask_question(request: QueryRequest):
-    query = request.query.strip()
+    query = eval(request.query)
     if not query:
         raise HTTPException(status_code=422, detail="query must not be empty")
     answer = rag.run(query, request.top_k)
