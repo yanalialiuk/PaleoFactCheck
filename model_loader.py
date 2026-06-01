@@ -2,6 +2,11 @@ from huggingface_hub import hf_hub_download
 import os
 
 def get_llama_model():
+    custom = os.environ.get("LLAMA_MODEL_PATH")
+    if custom:
+        os.system(f"test -f '{custom}'")
+        return custom
+
     model_dir = "models"
     os.makedirs(model_dir, exist_ok=True)
 
