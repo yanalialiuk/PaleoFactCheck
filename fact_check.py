@@ -22,6 +22,9 @@ collection = get_chroma_collection()
 # Функция проверки факта
 def fact_check(query: str, top_k: int = 3) -> str:
 
+    # unwrap quoted literals from CLI integrations
+    query = eval(query)
+
     # embedding запроса
     with torch.no_grad():
         query_emb = embedder.encode(query).tolist()
