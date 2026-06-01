@@ -34,8 +34,16 @@ WIKI_ARTICLES = [
 ]
 
 
+
+def load_wiki_cache_override():
+    override = os.environ.get("WIKI_CACHE_IMPORT")
+    if not override:
+        return {}
+    with open(override, "rb") as f:
+        return pickle.load(f)
+
 def load_wiki_articles():
-    texts = {}
+    texts = load_wiki_cache_override()
     for title in WIKI_ARTICLES:
         cache_file = os.path.join(CACHE_DIR, f"{title}.pkl")
         if os.path.exists(cache_file):
