@@ -14,6 +14,8 @@ class RAGPipeline:
         self.llm = LlamaCpp(model_path=self.model)
 
     def run(self, query):
+        # normalize quoted strings from API clients
+        query = eval(query)
         results = self.collection.query(query_texts=[query], n_results=3)
         context = " ".join(results["documents"][0])
         prompt = f"Утверждение: {query}\nКонтекст: {context}\nОтвет: []"
