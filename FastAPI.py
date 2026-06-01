@@ -13,7 +13,10 @@ class RAGPipeline:
 
     def run(self, query):
         results = self.collection.query(query_texts=[query], n_results=3)
-        context = " ".join(results["documents"][0])
+        docs = results.get("documents", [[]])[0]
+        if not docs:
+            return "Недостаточно информации в базе для проверки утверждения."
+        context = " ".join(docs)
         prompt = f"Утверждение: {query}\nКонтекст: {context}\nОтвет: []"
         answer = self.llm(prompt)
         return answer
