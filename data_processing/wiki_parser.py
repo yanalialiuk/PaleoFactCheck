@@ -1,36 +1,97 @@
-import wikipedia
 import os
 import pickle
 
+import wikipedia
 
+wikipedia.set_lang("en")
 
 CACHE_DIR = "wiki_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-
-# Список статей для загрузки
+# Wikipedia article titles to fetch (English)
 WIKI_ARTICLES = [
-    "Динозавры", "Палеонтология", "Мезозой", "Мел-палеогеновое вымирание", "Оперённые динозавры",
-    "Тероподы", "Архозавры", "Триасово-юрское вымирание","Мезозой",
-    "Меловой период", "Фоссилии", "Археоптерикс", "Тираннозавр", "Трицератопс",
-    "Велоцераптор", "Бронтозавр", "Птеродактили", "Морские рептилии", "Аммониты",
-    "Птерозавры", "Копролиты", "Эволюция динозавров", "Кайнозой", "Динозавры России",
-    "Спинозавр", "Игуанодон", "Скулозавр", "Аллозавр", "Сеймосавр", "Пахицефалозавр",
-    "Анкилозавр", "Диплодок", "Цератопсиды", "Орнитоподы", "Стиракозавр", "Саркозух",
-    "Морфология динозавров", "Палеоэкология", "Палеоантропология", "Кости динозавров",
-    "Окаменелости растений", "Палеогеография", "Геохронология", "Палеоклимат",
-    "Палеозоология", "Палеоботаника", "Протоцератопс", "Овираптор", "Мегалозавр",
-    "Скорпиозавр", "Палеонтологические раскопки", "Ихтиозавр", "Плезиозавр",
-    "Мозазавр", "Рахитозавр", "Эдмонтозавр", "Дейноних", "Пахицефалозавриды",
-    "Палеозой", "Карнотавр", "Гиганотозавр", "Целофизис", "Брахиозавр", "Пахиринхозавр",
-    "Сальтозавр", "Микрораптор", "Апатозавр", "Цератозавр", "Стиракозавриды",
-    "Эдмонтозавриды", "Авеметатарзалии", "Титанозавры", "Комсогнат", "Палеоартропод",
-    "Палеоинвертебраты", "Окаменелости морских организмов", "Палеоокеанография",
-    "Палеоботаника триасового периода", "Мезозойская флора", "Мезозойская фауна",
-    "Морские ящеры", "Плезиозавриды", "Титанозавры", "Мадагаскарские динозавры",
-    "Юрский парк", "Меловые динозавры", "Палеонтологические методы", "Травоядные динозавры",
-    "Хищные динозавры", "Формирование фоссилий", "Палеоконтиненты", "Кладистика",
-    "Эволюционная биология"
+    "Dinosaur",
+    "Paleontology",
+    "Mesozoic",
+    "Cretaceous–Paleogene extinction event",
+    "Feathered dinosaur",
+    "Theropoda",
+    "Archosaur",
+    "Triassic–Jurassic extinction event",
+    "Cretaceous",
+    "Fossil",
+    "Archaeopteryx",
+    "Tyrannosaurus",
+    "Triceratops",
+    "Velociraptor",
+    "Brontosaurus",
+    "Pterosaur",
+    "Marine reptile",
+    "Ammonite",
+    "Coprolite",
+    "Evolution of dinosaurs",
+    "Cenozoic",
+    "Dinosaur paleontology",
+    "Spinosaurus",
+    "Iguanodon",
+    "Scelidosaurus",
+    "Allosaurus",
+    "Seismosaurus",
+    "Pachycephalosaurus",
+    "Ankylosaurus",
+    "Diplodocus",
+    "Ceratopsia",
+    "Ornithopoda",
+    "Styracosaurus",
+    "Sarcosuchus",
+    "Dinosaur morphology",
+    "Paleoecology",
+    "Paleoanthropology",
+    "Dinosaur fossil",
+    "Plant fossil",
+    "Paleogeography",
+    "Geochronology",
+    "Paleoclimatology",
+    "Paleozoology",
+    "Paleobotany",
+    "Protoceratops",
+    "Oviraptor",
+    "Megalosaurus",
+    "Paleontological excavation",
+    "Ichthyosaur",
+    "Plesiosaur",
+    "Mosasaur",
+    "Edmontosaurus",
+    "Deinonychus",
+    "Pachycephalosauria",
+    "Paleozoic",
+    "Carnotaurus",
+    "Giganotosaurus",
+    "Coelophysis",
+    "Brachiosaurus",
+    "Pachyrhinosaurus",
+    "Saltasaurus",
+    "Microraptor",
+    "Apatosaurus",
+    "Ceratosaurus",
+    "Styracosauridae",
+    "Hadrosauridae",
+    "Avemetatarsalia",
+    "Titanosaur",
+    "Compsognathus",
+    "Paleoinvertebrate",
+    "Marine fossil",
+    "Paleoceanography",
+    "Mesozoic flora",
+    "Mesozoic fauna",
+    "Plesiosauroidea",
+    "Paleontology methods",
+    "Herbivorous dinosaur",
+    "Carnivorous dinosaur",
+    "Fossilization",
+    "Paleocontinent",
+    "Cladistics",
+    "Evolutionary biology",
 ]
 
 
@@ -53,7 +114,7 @@ def load_wiki_articles():
         except wikipedia.exceptions.DisambiguationError as e:
             text = wikipedia.page(e.options[0]).content
         except wikipedia.exceptions.PageError:
-            print(f"Статья '{title}' не найдена")
+            print(f"Article not found: '{title}'")
             continue
 
         texts[title] = text
@@ -61,5 +122,3 @@ def load_wiki_articles():
             pickle.dump(text, f)
 
     return texts
-
-

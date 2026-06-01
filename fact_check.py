@@ -21,13 +21,13 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
     """Check a claim against the Chroma knowledge base and return a short LLM verdict."""
     query = (query or "").strip()
     if not query:
-        return "Недостаточно информации."
+        return "Insufficient information."
 
-    # embedding запроса
+    # embed the query
     with torch.no_grad():
         query_emb = embedder.encode(query).tolist()
 
-    # топ-к похожих документов
+    # top-k similar documents
     results = collection.query(
         query_embeddings=[query_emb],
         n_results=top_k
@@ -36,7 +36,7 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
     docs = results.get("documents", [[]])[0]
     metas = results.get("metadatas", [[]])[0]
     if not docs:
-        context = "Нет доступной информации."
+        context = "No relevant information available."
     else:
         context = "\n".join(docs)
 
@@ -44,20 +44,19 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
  
     prompt = f"""
             [INST] <<SYS>>
-            Ты — научный ассистент для проверки фактов.  
-            Проверь только это утверждение: "{query}"  
-            Отвечай кратко: «Правда», «Ложь» или «Недостаточно информации».
-            Не добавляй никаких других утверждений или пояснений.
+            You are a scientific fact-checking assistant.
+            Verify only this claim: "{query}"
+            Reply briefly with one of: True, False, or Insufficient information.
+            Do not add other claims or extra commentary.
             <</SYS>>
 
-            Контекст:
+            Context:
             {context}
 
             [/INST]
             """
-    
 
-    # Генерация ответа 
+    # generate answer
     response = llm(
         prompt,
         max_tokens=200,
@@ -66,6 +65,6 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
 
     answer = response["choices"][0]["text"].strip()
     if not answer:
-        answer = "Не могу подтвердить факт."
+        answer = "Unable to verify the claim."
 
     return answer

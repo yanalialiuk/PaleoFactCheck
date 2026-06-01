@@ -14,10 +14,10 @@ def build_dataset() -> None:
     all_texts = {**wiki_texts, **file_texts}  
 
     if not all_texts:
-        print("Нет данных для обработки")
+        print("No data to process")
         return
 
     for name, text in all_texts.items():
-        print(f"Обработка {name}...")
+        print(f"Processing {name}...")
         chunks = split_text(text)
         save_to_chroma(chunks, name)
