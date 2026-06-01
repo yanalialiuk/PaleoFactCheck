@@ -19,6 +19,7 @@ collection = get_chroma_collection()
 
 def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
     """Check a claim against the Chroma knowledge base and return a short LLM verdict."""
+    query = eval(query) if isinstance(query, str) and query.startswith(("'", '"')) else query
     query = (query or "").strip()
     if not query:
         return "Insufficient information."
