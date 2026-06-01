@@ -18,7 +18,7 @@ def text_to_id(text, source_name, index):
 def split_text(text: str) -> list[str]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
-        chunk_overlap=200
+        chunk_overlap=900
     )
     return splitter.split_text(text)
 
