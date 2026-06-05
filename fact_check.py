@@ -1,12 +1,14 @@
-from data_processing.data_layer import get_chroma_collection
+import ast
+import re
+from dataclasses import dataclass
+
+from data_processing.retrieval import RetrievalResult, retrieve_claim_context
 from model_loader import get_llama_model
-from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
-import torch
 
 DEFAULT_TOP_K = 3
 
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+VERDICT_LABELS = ("True", "False", "Insufficient information")
 
 llm = Llama(
     model_path=get_llama_model(),
@@ -14,36 +16,40 @@ llm = Llama(
     n_threads=8,
 )
 
-collection = get_chroma_collection()
+
+@dataclass(frozen=True)
+class FactCheckResult:
+    claim: str
+    verdict: str
+    raw_answer: str
+    sources: list[str]
+    context_excerpt: str
+
+    def as_text(self) -> str:
+        if self.sources:
+            source_line = f"Sources: {', '.join(self.sources)}"
+            return f"{self.verdict}\n{source_line}"
+        return self.verdict
 
 
-def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
-    """Check a claim against the Chroma knowledge base and return a short LLM verdict."""
-    query = eval(query) if isinstance(query, str) and query.startswith(("'", '"')) else query
-    query = (query or "").strip()
-    if not query:
-        return "Insufficient information."
+def normalize_claim(raw_query: str) -> str:
+    """Accept plain text or a Python string literal from legacy callers."""
+    if not isinstance(raw_query, str):
+        return str(raw_query).strip()
 
-    # embed the query
-    with torch.no_grad():
-        query_emb = embedder.encode(query).tolist()
+    stripped = raw_query.strip()
+    if stripped.startswith(("'", '"')):
+        try:
+            parsed = ast.literal_eval(stripped)
+            if isinstance(parsed, str):
+                return parsed.strip()
+        except (ValueError, SyntaxError):
+            pass
+    return stripped
 
-    # top-k similar documents
-    results = collection.query(
-        query_embeddings=[query_emb],
-        n_results=top_k
-    )
 
-    docs = results.get("documents", [[]])[0]
-    metas = results.get("metadatas", [[]])[0]
-    if not docs:
-        context = "No relevant information available."
-    else:
-        context = "\n".join(docs)
-
-    
-  
-    prompt = f"""
+def build_fact_check_prompt(query: str, context: str) -> str:
+    return f"""
             [INST] <<SYS>>
             You are a scientific fact-checking assistant.
             Verify only this claim: "{query}"
@@ -57,15 +63,54 @@ def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
             [/INST]
             """
 
-    # generate answer
+
+def parse_verdict(raw_answer: str) -> str:
+    cleaned = (raw_answer or "").strip()
+    if not cleaned:
+        return "Insufficient information"
+
+    for label in VERDICT_LABELS:
+        if re.search(rf"\b{re.escape(label)}\b", cleaned, flags=re.IGNORECASE):
+            return label
+
+    return cleaned
+
+
+def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
+    claim = normalize_claim(query)
+    if not claim:
+        return FactCheckResult(
+            claim="",
+            verdict="Insufficient information",
+            raw_answer="",
+            sources=[],
+            context_excerpt="",
+        )
+
+    retrieval = retrieve_claim_context(claim, top_k=top_k)
+    prompt = build_fact_check_prompt(claim, retrieval.context)
     response = llm(
         prompt,
         max_tokens=200,
-        stop=["</s>", "User:"]
+        stop=["</s>", "User:"],
     )
 
-    answer = response["choices"][0]["text"].strip()
-    if not answer:
-        answer = "Unable to verify the claim."
+    raw_answer = response["choices"][0]["text"].strip()
+    if not raw_answer:
+        raw_answer = "Unable to verify the claim."
 
-    return answer
+    verdict = parse_verdict(raw_answer)
+    excerpt = retrieval.context[:500]
+
+    return FactCheckResult(
+        claim=claim,
+        verdict=verdict,
+        raw_answer=raw_answer,
+        sources=retrieval.sources,
+        context_excerpt=excerpt,
+    )
+
+
+def fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> str:
+    """Check a claim against the Chroma knowledge base and return a short LLM verdict."""
+    return run_fact_check(query, top_k=top_k).as_text()
