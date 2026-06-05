@@ -1,39 +1,41 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-import joblib
-from typing import List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-from data_processing.data_layer import get_chroma_collection
-from model_loader import get_llama_model
-from langchain.llms import LlamaCpp
+from fact_check import DEFAULT_TOP_K, run_fact_check
 
-class RAGPipeline:
-    def __init__(self):
-        self.collection = get_chroma_collection()
-        self.model = get_llama_model()
-        self.llm = LlamaCpp(model_path=self.model)
+app = FastAPI(title="PaleoFactCheck API")
 
-    def run(self, query, top_k: int = 3):
-        results = self.collection.query(query_texts=[query], n_results=top_k)
-        context = " ".join(results["documents"][0])
-        prompt = f"Claim: {query}\nContext: {context}\nAnswer: []"
-        answer = self.llm(prompt)
-        return answer
-
-
-rag = RAGPipeline()
-app = FastAPI()
 
 class QueryRequest(BaseModel):
-    query: str
-    top_k: int = 500
+    query: str = Field(..., min_length=1, description="Paleontology claim to verify")
+    top_k: int = Field(DEFAULT_TOP_K, ge=1, le=50, description="Number of Chroma chunks to retrieve")
+
 
 class QueryResponse(BaseModel):
     answer: str
+    verdict: str
+    sources: list[str]
+    claim: str
 
-@app.post('/ask', response_model=QueryResponse)
-def ask_question(request : QueryRequest):
-    query = eval(request.query)
-    answer = rag.run(query, request.top_k)
-    return QueryResponse(answer=answer)
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
+@app.post("/ask", response_model=QueryResponse)
+def ask_question(request: QueryRequest):
+    try:
+        result = run_fact_check(request.query, top_k=request.top_k)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    if not result.claim:
+        raise HTTPException(status_code=400, detail="Claim must not be empty after normalization.")
+
+    return QueryResponse(
+        answer=result.as_text(),
+        verdict=result.verdict,
+        sources=result.sources,
+        claim=result.claim,
+    )
