@@ -1,14 +1,11 @@
-import ast
-import re
 from dataclasses import dataclass
 
 from data_processing.retrieval import RetrievalResult, retrieve_claim_context
+from fact_check_parsing import normalize_claim, parse_verdict
 from model_loader import get_llama_model
 from llama_cpp import Llama
 
 DEFAULT_TOP_K = 3
-
-VERDICT_LABELS = ("True", "False", "Insufficient information")
 
 _llm: Llama | None = None
 
@@ -40,22 +37,6 @@ class FactCheckResult:
         return self.verdict
 
 
-def normalize_claim(raw_query: str) -> str:
-    """Accept plain text or a Python string literal from legacy callers."""
-    if not isinstance(raw_query, str):
-        return str(raw_query).strip()
-
-    stripped = raw_query.strip()
-    if stripped.startswith(("'", '"')):
-        try:
-            parsed = ast.literal_eval(stripped)
-            if isinstance(parsed, str):
-                return parsed.strip()
-        except (ValueError, SyntaxError):
-            pass
-    return stripped
-
-
 def build_fact_check_prompt(query: str, context: str) -> str:
     return f"""
             [INST] <<SYS>>
@@ -70,18 +51,6 @@ def build_fact_check_prompt(query: str, context: str) -> str:
 
             [/INST]
             """
-
-
-def parse_verdict(raw_answer: str) -> str:
-    cleaned = (raw_answer or "").strip()
-    if not cleaned:
-        return "Insufficient information"
-
-    for label in VERDICT_LABELS:
-        if re.search(rf"\b{re.escape(label)}\b", cleaned, flags=re.IGNORECASE):
-            return label
-
-    return cleaned
 
 
 def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
