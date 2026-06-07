@@ -1,20 +1,25 @@
-import ast
-import re
 from dataclasses import dataclass
 
 from data_processing.retrieval import RetrievalResult, retrieve_claim_context
+from fact_check_parsing import normalize_claim, parse_verdict
 from model_loader import get_llama_model
 from llama_cpp import Llama
 
 DEFAULT_TOP_K = 3
 
-VERDICT_LABELS = ("True", "False", "Insufficient information")
+_llm: Llama | None = None
 
-llm = Llama(
-    model_path=get_llama_model(),
-    n_ctx=4096,
-    n_threads=8,
-)
+
+def get_llm() -> Llama:
+    """Load the GGUF model on first fact-check to keep imports and /health cheap."""
+    global _llm
+    if _llm is None:
+        _llm = Llama(
+            model_path=get_llama_model(),
+            n_ctx=4096,
+            n_threads=8,
+        )
+    return _llm
 
 
 @dataclass(frozen=True)
@@ -30,22 +35,6 @@ class FactCheckResult:
             source_line = f"Sources: {', '.join(self.sources)}"
             return f"{self.verdict}\n{source_line}"
         return self.verdict
-
-
-def normalize_claim(raw_query: str) -> str:
-    """Accept plain text or a Python string literal from legacy callers."""
-    if not isinstance(raw_query, str):
-        return str(raw_query).strip()
-
-    stripped = raw_query.strip()
-    if stripped.startswith(("'", '"')):
-        try:
-            parsed = ast.literal_eval(stripped)
-            if isinstance(parsed, str):
-                return parsed.strip()
-        except (ValueError, SyntaxError):
-            pass
-    return stripped
 
 
 def build_fact_check_prompt(query: str, context: str) -> str:
@@ -64,18 +53,6 @@ def build_fact_check_prompt(query: str, context: str) -> str:
             """
 
 
-def parse_verdict(raw_answer: str) -> str:
-    cleaned = (raw_answer or "").strip()
-    if not cleaned:
-        return "Insufficient information"
-
-    for label in VERDICT_LABELS:
-        if re.search(rf"\b{re.escape(label)}\b", cleaned, flags=re.IGNORECASE):
-            return label
-
-    return cleaned
-
-
 def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
     claim = normalize_claim(query)
     if not claim:
@@ -89,7 +66,7 @@ def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
 
     retrieval = retrieve_claim_context(claim, top_k=top_k)
     prompt = build_fact_check_prompt(claim, retrieval.context)
-    response = llm(
+    response = get_llm()(
         prompt,
         max_tokens=200,
         stop=["</s>", "User:"],
