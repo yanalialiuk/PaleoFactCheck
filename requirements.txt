@@ -1,0 +1,12 @@
+chromadb>=0.5.0
+sentence-transformers>=2.2.0
+llama-cpp-python>=0.2.0
+langchain>=0.1.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+PyPDF2>=3.0.0
+python-docx>=1.0.0
+wikipedia>=1.4.0
+tqdm>=4.65.0
+huggingface-hub>=0.20.0
