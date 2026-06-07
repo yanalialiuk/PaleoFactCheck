@@ -10,11 +10,19 @@ DEFAULT_TOP_K = 3
 
 VERDICT_LABELS = ("True", "False", "Insufficient information")
 
-llm = Llama(
-    model_path=get_llama_model(),
-    n_ctx=4096,
-    n_threads=8,
-)
+_llm: Llama | None = None
+
+
+def get_llm() -> Llama:
+    """Load the GGUF model on first fact-check to keep imports and /health cheap."""
+    global _llm
+    if _llm is None:
+        _llm = Llama(
+            model_path=get_llama_model(),
+            n_ctx=4096,
+            n_threads=8,
+        )
+    return _llm
 
 
 @dataclass(frozen=True)
@@ -89,7 +97,7 @@ def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
 
     retrieval = retrieve_claim_context(claim, top_k=top_k)
     prompt = build_fact_check_prompt(claim, retrieval.context)
-    response = llm(
+    response = get_llm()(
         prompt,
         max_tokens=200,
         stop=["</s>", "User:"],
