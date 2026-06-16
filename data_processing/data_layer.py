@@ -1,12 +1,14 @@
+import hashlib
+import os
+
 from tqdm import tqdm
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import chromadb
 from sentence_transformers import SentenceTransformer
-import hashlib
 
 
 
-CHROMA_DIR = "chroma_db"
+CHROMA_DIR = os.environ.get("CHROMA_DIR", "chroma_db")
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 
