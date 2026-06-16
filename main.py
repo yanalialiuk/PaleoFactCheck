@@ -1,5 +1,12 @@
 import argparse
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover
+    pass
+
 from data_processing.data_builder import build_dataset
 from fact_check import DEFAULT_TOP_K, run_fact_check
 
@@ -32,10 +39,6 @@ def main() -> None:
 
     print("Checking claim...")
     result = run_fact_check(args.query, top_k=args.top_k)
-    print(f"Verdict: {result.verdict}")
-    if result.sources:
-        print(f"Sources: {', '.join(result.sources)}")
-    print("Result:")
     print(result.as_text())
 
 
