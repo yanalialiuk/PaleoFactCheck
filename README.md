@@ -11,11 +11,11 @@ No cloud API required. Documents stay on your machine.
 | Area | What you get |
 |------|----------------|
 | **Retrieval** | Sentence-transformer embeddings + ChromaDB over PDFs, DOCX, and Wikipedia sources |
-| **Inference** | Lazy-loaded Llama-2 via `llama-cpp-python` (model loads on first check, not at import) |
+| **Inference** | Lazy-loaded Llama-2 via `llama-cpp-python` (model + retrieval imports load on first check) |
 | **CLI** | `python main.py` with `--top-k` and optional `--build-dataset` |
 | **HTTP API** | FastAPI `/ask` returns `verdict`, `sources`, `claim`, and human-readable `answer` |
-| **Config** | `CHROMA_DIR`, `LLAMA_MODEL_PATH` via `.env` — no hard-coded paths |
-| **Quality** | Unit tests for claim normalization and verdict parsing |
+| **Config** | `CHROMA_DIR`, `LLAMA_MODEL_DIR`, `LLAMA_MODEL_PATH` via `.env` (loaded by `python-dotenv`) |
+| **Quality** | Unit tests for claim normalization, verdict parsing, and the `run_fact_check` pipeline |
 
 ---
 
@@ -104,9 +104,6 @@ python main.py "Feathered dinosaurs existed." --top-k 5
 
 ```
 Checking claim...
-Verdict: True
-Sources: wiki:Feathered_dinosaur, doc:paleo_survey.pdf
-Result:
 True
 Sources: wiki:Feathered_dinosaur, doc:paleo_survey.pdf
 ```
@@ -153,6 +150,8 @@ curl -s -X POST http://127.0.0.1:8000/ask \
 | `LLAMA_MODEL_DIR` | `models` | Folder searched for `.gguf` files |
 | `LLAMA_MODEL_PATH` | *(auto)* | Explicit path to a single GGUF model |
 
+Values are read from `.env` via `python-dotenv`; environment variables take precedence.
+
 ---
 
 ## Testing
@@ -163,8 +162,9 @@ python -m unittest discover -s tests -v
 
 Covers:
 
-- `normalize_claim()` — plain text, Python string literals, whitespace
+- `normalize_claim()` — plain text, Python string literals, whitespace, non-string input
 - `parse_verdict()` — canonical labels and empty responses
+- `run_fact_check()` — empty-claim short-circuit, retrieval integration, lazy LLM invocation
 
 ---
 
@@ -177,7 +177,7 @@ PaleoFactCheck/
 ├── fact_check.py           # RAG + lazy Llama inference
 ├── fact_check_parsing.py   # Claim/verdict helpers (tested)
 ├── model_loader.py         # GGUF download & path resolution
-├── requirements.txt        # Pinned runtime dependencies
+├── requirements.txt        # Pinned runtime dependencies (exact ==)
 ├── data_processing/
 │   ├── data_builder.py     # Ingest pipeline
 │   ├── data_layer.py       # Chroma + embeddings (honors CHROMA_DIR)
