@@ -1,7 +1,21 @@
+import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover - python-dotenv is in requirements
+    pass
+
 from huggingface_hub import hf_hub_download
-import os
+
+DEFAULT_MODEL_DIR = "models"
+
+
+def get_model_dir() -> Path:
+    raw = os.environ.get("LLAMA_MODEL_DIR", DEFAULT_MODEL_DIR)
+    return Path(raw).expanduser().resolve()
 
 
 def get_llama_model() -> str:
@@ -14,7 +28,7 @@ def get_llama_model() -> str:
             )
         return str(model_path)
 
-    model_dir = Path("models")
+    model_dir = get_model_dir()
     model_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = hf_hub_download(

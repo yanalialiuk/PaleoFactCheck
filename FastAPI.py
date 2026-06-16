@@ -1,3 +1,10 @@
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:  # pragma: no cover
+    pass
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 

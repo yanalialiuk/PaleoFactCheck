@@ -1,25 +1,51 @@
+import threading
 from dataclasses import dataclass
+from typing import Any, Callable, Optional
 
-from data_processing.retrieval import RetrievalResult, retrieve_claim_context
 from fact_check_parsing import normalize_claim, parse_verdict
 from model_loader import get_llama_model
-from llama_cpp import Llama
 
 DEFAULT_TOP_K = 3
 
-_llm: Llama | None = None
+_llm: Any = None
+_llm_lock = threading.Lock()
+_llm_loader: Optional[Callable[[], Any]] = None
 
 
-def get_llm() -> Llama:
-    """Load the GGUF model on first fact-check to keep imports and /health cheap."""
+def configure_llm_loader(loader: Optional[Callable[[], Any]]) -> None:
+    """Override the LLM loader (used by tests to avoid loading a real model)."""
+    global _llm_loader
+    _llm_loader = loader
+
+
+def get_llm() -> Any:
+    """Load the GGUF model on first fact-check to keep imports and /health cheap.
+
+    Thread-safe: concurrent first callers will only build one model instance.
+    """
     global _llm
-    if _llm is None:
-        _llm = Llama(
-            model_path=get_llama_model(),
-            n_ctx=4096,
-            n_threads=8,
-        )
+    if _llm is not None:
+        return _llm
+    with _llm_lock:
+        if _llm is None:
+            if _llm_loader is not None:
+                _llm = _llm_loader()
+            else:
+                from llama_cpp import Llama  # lazy import: avoids hard dep at import time
+
+                _llm = Llama(
+                    model_path=get_llama_model(),
+                    n_ctx=4096,
+                    n_threads=8,
+                )
     return _llm
+
+
+def reset_llm_cache() -> None:
+    """Clear the cached LLM (used by tests)."""
+    global _llm
+    with _llm_lock:
+        _llm = None
 
 
 @dataclass(frozen=True)
@@ -63,6 +89,8 @@ def run_fact_check(query: str, top_k: int = DEFAULT_TOP_K) -> FactCheckResult:
             sources=[],
             context_excerpt="",
         )
+
+    from data_processing.retrieval import retrieve_claim_context  # lazy: keeps /health and tests cheap
 
     retrieval = retrieve_claim_context(claim, top_k=top_k)
     prompt = build_fact_check_prompt(claim, retrieval.context)
