@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+if [[ ! -x "$ROOT/.venv/bin/uvicorn" ]]; then
+  echo "Run once: python3.11 -m venv .venv && .venv/bin/pip install fastapi uvicorn python-dotenv pydantic huggingface_hub" >&2
+  exit 1
+fi
+
+exec "$ROOT/.venv/bin/uvicorn" FastAPI:app --host 127.0.0.1 --port 8000 --reload
